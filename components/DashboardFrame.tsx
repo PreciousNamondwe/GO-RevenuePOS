@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Users, Store, Banknote, ShieldAlert,
   Search, MoreHorizontal, Mail, Bell, ChevronDown, LogOut,
-  ChevronLeft, ChevronRight, Menu, X, Layers, Settings,
+  ChevronLeft, ChevronRight, Menu, X, Layers, Settings,Activity,
 } from "lucide-react";
 import { OverviewTab } from "./OverviewTab";
 import { SubModules } from "./SubModules";
@@ -64,7 +64,7 @@ export function DashboardFrame() {
     { name: "Overview", icon: LayoutDashboard },
     { name: "Decision Matrix", icon: Layers },
     { name: "Collections", icon: Banknote },
-    { name: "Zone Tracking", icon: ShieldAlert },
+    { name: "Monitoring", icon: Activity },
     { name: "Settings", icon: Settings },
   ];
 
