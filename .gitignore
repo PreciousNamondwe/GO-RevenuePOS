@@ -43,3 +43,4 @@ release/
 *.exe
 *.yml
 *.yaml
+src-tauri/
