@@ -63,8 +63,8 @@ export function DashboardFrame() {
   const menuItems = [
     { name: "Overview", icon: LayoutDashboard },
     { name: "Decision Matrix", icon: Layers },
-    { name: "Collections", icon: Banknote },
     { name: "Monitoring", icon: Activity },
+    { name: "Collections", icon: Banknote },
     { name: "Settings", icon: Settings },
   ];
 
