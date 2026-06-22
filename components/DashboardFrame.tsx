@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Layers, Banknote, ShieldAlert, Settings,
-  Mail, Bell, ChevronDown, LogOut, ChevronLeft, ChevronRight,
+  Search, Mail, Bell, ChevronDown, LogOut, ChevronLeft, ChevronRight,
   Menu, X,
 } from "lucide-react";
 import { OverviewTab } from "./OverviewTab";
@@ -30,20 +30,13 @@ export function DashboardFrame() {
         if (session?.user) {
           const { data: profile } = await supabase
             .from("users")
-            .select("first_name, last_name, full_name, role, username, avatar_url")
+            .select("full_name, role, avatar_url")
             .eq("email", session.user.email)
             .maybeSingle();
 
           if (profile) {
-            const displayName = profile.first_name && profile.last_name 
-              ? `${profile.first_name} ${profile.last_name}`
-              : profile.full_name 
-              || profile.username 
-              || session.user.email?.split("@")[0] 
-              || "User";
-
             setCurrentUser({
-              fullName: displayName,
+              fullName: profile.full_name || "User",
               role: profile.role?.replace(/_/g, " ") || "Field Agent",
               avatar: profile.avatar_url || "",
             });
@@ -85,7 +78,6 @@ export function DashboardFrame() {
     }
   };
 
-  // Generate avatar URL
   const avatarSrc = currentUser.avatar 
     || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.fullName)}&background=5684ff&color=fff&size=100&bold=true`;
 
@@ -148,13 +140,24 @@ export function DashboardFrame() {
         {/* TOP HEADER - PROFILE TOP RIGHT */}
         <header className="bg-[#5684ff] h-16 md:h-20 px-4 md:px-8 flex items-center justify-between shadow-md select-none shrink-0">
           
-          {/* Left: Mobile Logo / Page Title */}
+          {/* Left: Logo / Title */}
           <div className="flex items-center gap-2 md:gap-3">
             <div className="md:hidden flex items-center gap-2">
               <img src="/gov_arm.png" alt="Gov Logo" className="h-7 w-auto object-contain" />
               <span className="text-white font-black text-sm tracking-wider">GO-Revenue</span>
             </div>
-            <span className="text-white font-black text-sm md:text-base tracking-wider hidden md:block">GO-Revenue POS</span>
+            
+            {/* Desktop Search */}
+            <div className="relative hidden md:block w-80">
+              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-white/70" />
+              </span>
+              <input 
+                type="text" 
+                placeholder="Search records, vendors or devices..." 
+                className="w-full bg-white/10 border border-white/20 text-white placeholder-white/60 text-xs rounded-full pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-white/40 transition-all"
+              />
+            </div>
           </div>
 
           {/* Right: Icons + Profile */}
@@ -179,9 +182,9 @@ export function DashboardFrame() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="flex items-center gap-2.5 md:gap-3 cursor-pointer group"
             >
-              {/* Name & Role - Right of Avatar */}
+              {/* Name & Role - Right of Avatar, Right Aligned */}
               <div className="text-right hidden sm:block leading-tight">
-                <p className="text-white text-xs font-bold uppercase tracking-wide group-hover:text-white/90 transition-colors truncate max-w-[140px]">
+                <p className="text-white text-xs font-black uppercase tracking-wide group-hover:text-white/90 transition-colors truncate max-w-[140px]">
                   {currentUser.fullName}
                 </p>
                 <p className="text-[10px] text-white/70 font-semibold uppercase tracking-wider mt-0.5">
@@ -259,7 +262,7 @@ export function DashboardFrame() {
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-300 to-blue-600 border-2 border-white/30 overflow-hidden">
                     <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-white text-sm font-bold truncate">{currentUser.fullName}</p>
                     <p className="text-[10px] text-[#5684ff] font-semibold uppercase tracking-wider">{currentUser.role}</p>
                   </div>
