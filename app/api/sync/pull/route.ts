@@ -5,7 +5,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 
-// Force dynamic — prevents Next.js from evaluating Prisma at build time
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
@@ -130,6 +129,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ records: serializedRecords });
   } catch (error: any) {
     console.error("Pull error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message, name: error.name }, { status: 500 });
   }
 }
