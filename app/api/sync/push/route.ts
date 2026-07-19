@@ -1,3 +1,4 @@
+// app/api/sync/push/route.ts — with detailed error reporting
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!table || !Array.isArray(records)) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
     const syncedIds: number[] = [];
-    const failedIds: number[] = [];
+    const failedDetails: { id: number; error: string }[] = [];
 
     for (const r of records) {
       try {
@@ -45,15 +46,15 @@ export async function POST(req: NextRequest) {
             syncedIds.push(r.id);
             break;
           default:
-            failedIds.push(r.id);
+            failedDetails.push({ id: r.id, error: `Unknown table: ${table}` });
         }
       } catch (err: any) {
-        console.error(`Push ${table} ${r.id} failed:`, err.message);
-        failedIds.push(r.id);
+        console.error(`Push ${table} #${r.id} failed:`, err.message);
+        failedDetails.push({ id: r.id, error: err.message });
       }
     }
 
-    return NextResponse.json({ syncedIds, failedIds });
+    return NextResponse.json({ syncedIds, failedDetails });
   } catch (e: any) {
     console.error("Push error:", e.message);
     return NextResponse.json({ error: e.message }, { status: 500 });
