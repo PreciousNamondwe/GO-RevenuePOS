@@ -1,28 +1,25 @@
-// ============================================================
-// app/api/debug/route.ts — Raw SQL (NO PRISMA)
-// ============================================================
-
-import { query } from "@/lib/db";
+// app/api/debug/route.ts — postgres version
+import { sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const roleCount = await query("SELECT COUNT(*) as c FROM roles");
-    const userCount = await query("SELECT COUNT(*) as c FROM \"user\"");
-    const btCount = await query("SELECT COUNT(*) as c FROM business_types");
-    const boCount = await query("SELECT COUNT(*) as c FROM business_owners");
-    const bizCount = await query("SELECT COUNT(*) as c FROM businesses");
+    const [roleCount] = await sql`SELECT COUNT(*) as c FROM roles`;
+    const [userCount] = await sql`SELECT COUNT(*) as c FROM "user"`;
+    const [btCount] = await sql`SELECT COUNT(*) as c FROM business_types`;
+    const [boCount] = await sql`SELECT COUNT(*) as c FROM business_owners`;
+    const [bizCount] = await sql`SELECT COUNT(*) as c FROM businesses`;
 
     return Response.json({
       status: "ok",
       dbConnected: true,
       counts: {
-        roles: parseInt(roleCount.rows[0].c),
-        users: parseInt(userCount.rows[0].c),
-        business_types: parseInt(btCount.rows[0].c),
-        business_owners: parseInt(boCount.rows[0].c),
-        businesses: parseInt(bizCount.rows[0].c),
+        roles: parseInt(roleCount.c),
+        users: parseInt(userCount.c),
+        business_types: parseInt(btCount.c),
+        business_owners: parseInt(boCount.c),
+        businesses: parseInt(bizCount.c),
       },
       env: {
         nodeEnv: process.env.NODE_ENV,
@@ -34,7 +31,7 @@ export async function GET() {
       status: "error",
       dbConnected: false,
       error: error.message,
-      hint: "Make sure DATABASE_URL is set and tables exist. Run: npx prisma db push",
+      hint: "Make sure DATABASE_URL is set and tables exist.",
     }, { status: 500 });
   }
 }
