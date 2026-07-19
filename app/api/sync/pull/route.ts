@@ -1,15 +1,13 @@
 // ============================================================
-// app/api/sync/pull/route.ts — Server: Send server data to device
+// app/api/sync/pull/route.ts — Raw SQL (NO PRISMA)
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { getPrisma } from "@/lib/prisma";
+import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const prisma = getPrisma();
-
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -24,111 +22,61 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Table name required" }, { status: 400 });
     }
 
-    const sinceDate = new Date(since);
+    let sql = "";
     let records: any[] = [];
 
     switch (table) {
       case "roles":
-        records = await prisma.role.findMany({
-          where: { createdAt: { gte: sinceDate } },
-          select: {
-            id: true,
-            roleKey: true,
-            roleLabel: true,
-            description: true,
-            color: true,
-            isSynced: true,
-            createdAt: true,
-          },
-        });
+        sql = `SELECT id, role_key, role_label, description, color, is_synced, created_at 
+               FROM roles WHERE created_at >= $1 ORDER BY created_at ASC`;
         break;
 
       case "user":
-        records = await prisma.user.findMany({
-          where: { updatedAt: { gte: sinceDate } },
-          select: {
-            id: true,
-            userId: true,
-            fullName: true,
-            role: true,
-            pinHash: true,
-            biometricKey: true,
-            isActive: true,
-            isSynced: true,
-            lastLogin: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
+        sql = `SELECT id, user_id, full_name, role, pin_hash, biometric_key, 
+                      is_active, is_synced, last_login, created_at, updated_at
+               FROM "user" WHERE updated_at >= $1 ORDER BY updated_at ASC`;
         break;
 
       case "business_types":
-        records = await prisma.businessType.findMany({
-          where: { createdAt: { gte: sinceDate } },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            amountCharge: true,
-            isSynced: true,
-            createdAt: true,
-          },
-        });
+        sql = `SELECT id, name, description, amount_charge::text, is_synced, created_at 
+               FROM business_types WHERE created_at >= $1 ORDER BY created_at ASC`;
         break;
 
       case "business_owners":
-        records = await prisma.businessOwner.findMany({
-          where: { createdAt: { gte: sinceDate } },
-          select: {
-            id: true,
-            fullName: true,
-            nationalId: true,
-            location: true,
-            dateOfBirth: true,
-            allowMultipleBusinesses: true,
-            maxBusinessesCount: true,
-            isSynced: true,
-            createdAt: true,
-          },
-        });
+        sql = `SELECT id, full_name, national_id, location, date_of_birth,
+                      allow_multiple_businesses, max_businesses_count, is_synced, created_at
+               FROM business_owners WHERE created_at >= $1 ORDER BY created_at ASC`;
         break;
 
       case "businesses":
-        records = await prisma.business.findMany({
-          where: { createdAt: { gte: sinceDate } },
-          select: {
-            id: true,
-            businessName: true,
-            registrationNumber: true,
-            businessTypeId: true,
-            ownerId: true,
-            address: true,
-            phone: true,
-            email: true,
-            taxNumber: true,
-            isActive: true,
-            isSynced: true,
-            createdAt: true,
-          },
-        });
+        sql = `SELECT id, business_name, registration_number, business_type_id, 
+                      owner_id, address, phone, email, tax_number, is_active, is_synced, created_at
+               FROM businesses WHERE created_at >= $1 ORDER BY created_at ASC`;
         break;
 
       default:
         return NextResponse.json({ error: "Unknown table" }, { status: 400 });
     }
 
+    const result = await query(sql, [since]);
+    records = result.rows;
+
+    // Serialize dates and decimals for JSON
     const serializedRecords = records.map((r) => ({
       ...r,
-      createdAt: r.createdAt?.toISOString(),
-      updatedAt: (r as any).updatedAt?.toISOString(),
-      lastLogin: (r as any).lastLogin?.toISOString(),
-      dateOfBirth: (r as any).dateOfBirth?.toISOString(),
-      amountCharge: (r as any).amountCharge?.toString(),
+      created_at: r.created_at?.toISOString?.() || r.created_at,
+      updated_at: r.updated_at?.toISOString?.() || r.updated_at,
+      last_login: r.last_login?.toISOString?.() || r.last_login,
+      date_of_birth: r.date_of_birth?.toISOString?.() || r.date_of_birth,
     }));
 
     return NextResponse.json({ records: serializedRecords });
+
   } catch (error: any) {
     console.error("Pull error:", error.message);
-    return NextResponse.json({ error: error.message, name: error.name }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message, detail: error.detail || null },
+      { status: 500 }
+    );
   }
 }
