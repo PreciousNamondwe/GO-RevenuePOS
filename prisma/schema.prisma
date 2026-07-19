@@ -1,0 +1,144 @@
+// ============================================================
+// prisma/schema.prisma — PostgreSQL Schema for Lomis Field Terminal
+// Server-side database (sync target)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+// ─── Core Tables ───────────────────────────────────────────
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  roleKey     String    @unique @map("role_key")
+  roleLabel   String    @map("role_label")
+  description String?
+  color       String    @default("#5C8CE8")
+  isSynced    Int       @default(0) @map("is_synced")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  users       User[]
+
+  @@map("roles")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  userId        String    @unique @map("user_id")
+  fullName      String    @map("full_name")
+  role          String    @default("agent")
+  pinHash       String    @map("pin_hash")
+  biometricKey  String?   @map("biometric_key")
+  isActive      Int       @default(1) @map("is_active")
+  isSynced      Int       @default(0) @map("is_synced")
+  lastLogin     DateTime? @map("last_login")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  roleRef       Role      @relation(fields: [role], references: [roleKey])
+  sessions      Session[]
+  auditLogs     AuditLog[]
+
+  @@index([userId], map: "idx_user_user_id")
+  @@index([role], map: "idx_user_role")
+  @@map("user")
+}
+
+model Session {
+  id            Int       @id @default(autoincrement())
+  userId        String    @map("user_id")
+  jwtToken      String?   @map("jwt_token")
+  refreshToken  String?   @map("refresh_token")
+  expiresAt     DateTime  @map("expires_at")
+  isOffline     Int       @default(0) @map("is_offline")
+  isSynced      Int       @default(0) @map("is_synced")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId], map: "idx_sessions_user_id")
+  @@map("sessions")
+}
+
+model AuditLog {
+  id            Int       @id @default(autoincrement())
+  userId        String    @map("user_id")
+  action        String
+  details       String?
+  isSynced      Int       @default(0) @map("is_synced")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User      @relation(fields: [userId], references: [userId])
+
+  @@index([userId], map: "idx_audit_logs_user_id")
+  @@map("audit_logs")
+}
+
+model SyncQueue {
+  id            Int       @id @default(autoincrement())
+  tableName     String    @map("table_name")
+  operation     String
+  payload       String
+  retryCount    Int       @default(0) @map("retry_count")
+  isSynced      Int       @default(0) @map("is_synced")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([createdAt], map: "idx_sync_queue_created")
+  @@map("sync_queue")
+}
+
+// ─── Business Tables ───────────────────────────────────────
+
+model BusinessType {
+  id            Int       @id @default(autoincrement())
+  name          String    @unique
+  description   String?
+  amountCharge  Decimal   @default(0) @map("amount_charge") @db.Decimal(10, 2)
+  isSynced      Int       @default(0) @map("is_synced")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  businesses    Business[]
+
+  @@map("business_types")
+}
+
+model BusinessOwner {
+  id                      Int       @id @default(autoincrement())
+  fullName                String    @map("full_name")
+  nationalId              String?   @unique @map("national_id")
+  location                String?
+  dateOfBirth             DateTime? @map("date_of_birth")
+  allowMultipleBusinesses Int       @default(0) @map("allow_multiple_businesses")
+  maxBusinessesCount      Int       @default(1) @map("max_businesses_count")
+  isSynced                Int       @default(0) @map("is_synced")
+  createdAt               DateTime  @default(now()) @map("created_at")
+
+  businesses              Business[]
+
+  @@map("business_owners")
+}
+
+model Business {
+  id                  Int       @id @default(autoincrement())
+  businessName        String    @map("business_name")
+  registrationNumber  String?   @unique @map("registration_number")
+  businessTypeId      Int       @map("business_type_id")
+  ownerId             Int       @map("owner_id")
+  address             String?
+  phone               String?
+  email               String?
+  taxNumber           String?   @map("tax_number")
+  isActive            Int       @default(1) @map("is_active")
+  isSynced            Int       @default(0) @map("is_synced")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  businessType        BusinessType  @relation(fields: [businessTypeId], references: [id])
+  owner               BusinessOwner @relation(fields: [ownerId], references: [id])
+
+  @@map("businesses")
+}
