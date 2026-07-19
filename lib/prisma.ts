@@ -1,5 +1,5 @@
 // ============================================================
-// lib/prisma.ts — Lazy Prisma Client (defers instantiation until runtime)
+// lib/prisma.ts — Lazy Prisma Client for Vercel
 // ============================================================
 
 import { PrismaClient } from "@prisma/client";
